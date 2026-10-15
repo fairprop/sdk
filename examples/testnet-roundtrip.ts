@@ -1,12 +1,14 @@
 // End-to-end on testnet: market entry with TP/SL, a resting limit, cancels, close.
-// Uses your first active challenge. Size is tiny on purpose.
-//   PRIVATE_KEY=0x... npx tsx examples/testnet-roundtrip.ts
+// Uses CHALLENGE_ID from .env, else your newest active challenge. Size is tiny on purpose.
+//   Put PRIVATE_KEY=0x... in .env (gitignored), then: npx tsx examples/testnet-roundtrip.ts
 import { FairProp } from '../src/index'
+
+try { process.loadEnvFile('.env') } catch {}  // optional; .env is gitignored
 
 const fp = new FairProp({ network: 'testnet', privateKey: process.env.PRIVATE_KEY as `0x${string}` })
 
-let challengeId: bigint | undefined
-for (const id of (await fp.challenges.list()).reverse()) {
+let challengeId = process.env.CHALLENGE_ID ? BigInt(process.env.CHALLENGE_ID) : undefined
+if (challengeId === undefined) for (const id of (await fp.challenges.list()).reverse()) {
   if ((await fp.challenges.get(id)).status === 'active') { challengeId = id; break }
 }
 if (challengeId === undefined) throw new Error(`no active challenge for ${fp.address}`)

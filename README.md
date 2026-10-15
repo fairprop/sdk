@@ -48,7 +48,7 @@ await fp.orders.close({ challengeId, asset: 'BTC' })
 
 To get started on testnet:
 1. Get a testnet challenge at [testnet.fairprop.xyz](https://testnet.fairprop.xyz). It's free, and the app's faucet gives you HYPE for gas.
-2. Export that wallet's private key (or pass a viem `walletClient`).
+2. Put that wallet's key in a `.env` file in the repo root: `PRIVATE_KEY=0x...` (optionally `CHALLENGE_ID=...`). `.env` is gitignored, so never commit a key anywhere else.
 3. Run `examples/read-only.ts`, then `examples/testnet-roundtrip.ts`.
 
 ## API

@@ -1,6 +1,8 @@
 // Read-only tour: markets, your challenges, positions. No transactions.
-//   PRIVATE_KEY=0x... npx tsx examples/read-only.ts
+//   Put PRIVATE_KEY=0x... in .env (gitignored), then: npx tsx examples/read-only.ts
 import { FairProp } from '../src/index'
+
+try { process.loadEnvFile('.env') } catch {}  // optional; .env is gitignored
 import { generatePrivateKey } from 'viem/accounts'
 
 const fp = new FairProp({
