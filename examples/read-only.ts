@@ -6,7 +6,7 @@ try { process.loadEnvFile('.env') } catch {}  // optional; .env is gitignored
 import { generatePrivateKey } from 'viem/accounts'
 
 const fp = new FairProp({
-  network: (process.env.NETWORK as 'testnet' | 'mainnet') ?? 'testnet',
+  
   privateKey: (process.env.PRIVATE_KEY as `0x${string}`) ?? generatePrivateKey(),
 })
 

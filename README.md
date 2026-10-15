@@ -12,7 +12,7 @@ TypeScript SDK for [FairProp](https://fairprop.xyz), an on-chain prop-trading de
 
 Nobody can trade for you without your signature, and every rule is enforced on-chain.
 
-> Status: **0.1, testnet first.** The API may change before 1.0.
+> Status: **0.1, testnet only.** FairProp's next mainnet deployment is in preparation, and mainnet support ships with it. The API may change before 1.0.
 
 ## Install
 
@@ -27,7 +27,7 @@ Node 20+ (or any runtime with `fetch` and `crypto.getRandomValues`).
 ```ts
 import { FairProp } from '@fairprop/sdk'
 
-const fp = new FairProp({ network: 'testnet', privateKey: process.env.PRIVATE_KEY })
+const fp = new FairProp({ privateKey: process.env.PRIVATE_KEY })   // testnet
 
 const [challengeId] = await fp.challenges.list()
 console.log(await fp.challenges.state(challengeId))   // equity, drawdown, margin
@@ -77,10 +77,7 @@ Sizes are in asset units (`0.01` BTC) and prices in USD. Helpers `toSzi` / `toPx
 ### Prices
 All prices are Hyperliquid **mainnet** mark prices, on both FairProp networks. FairProp testnet simulates real markets, not Hyperliquid's testnet.
 
-| | Market order fills at | What the SDK sends as `fillPx` |
-|---|---|---|
-| **Testnet** | The price you send. There is no on-chain oracle on testnet | The current mark. A price far from mark (more than 2%) gets the challenge cancelled by the anti-cheat check |
-| **Mainnet** | On-chain mark (precompile `0x806`) ± a 1bp spread | A slippage bound: mark ± `slippageBps` (default 50) |
+On testnet there is no on-chain oracle, so a market order fills at the price you send. The SDK sends the current mark. The keeper can cancel a challenge whose fills are more than 2% from mark. On mainnet the contract reads mark on-chain, and the price sent becomes a slippage bound (mark ± `slippageBps`).
 
 ### Signed orders (limit, stop, TP, SL)
 - **EIP-712 domain:** `{ name: 'FairProp SimulationEngine', version: '1', chainId, verifyingContract: SimulationEngine }`. Exported as `orderDomain(network)` and `LIMIT_ORDER_TYPES`.
@@ -93,7 +90,7 @@ All prices are Hyperliquid **mainnet** mark prices, on both FairProp networks. F
 ### Cancelling
 - `orders.cancel` signs an off-chain `CancelOrder(challengeId, nonce)`. The orders API then marks the order cancelled, and the keeper stops tracking it.
 - The nonce is **not** burned on-chain, so the original signature stays technically valid.
-- On mainnet that matters little: the contract still requires mark to cross your price.
+- On mainnet the contract will also require mark to cross your price.
 - To make an order unusable for good, let it fill or give it an `expiry`.
 
 ### Rate limits
@@ -105,7 +102,7 @@ Testnet trusts the caller's prices:
 - Market orders fill at the `fillPx` you send.
 - A signed order can be submitted directly at any time, without its price being reached.
 
-The keeper flags deviations of more than 2% from mark and cancels the challenge. Testnet results are for building and testing bots, not for proving an edge. Mainnet reads prices on-chain and has neither gap.
+The keeper can cancel a challenge whose fills are more than 2% from mark. Testnet results are for building and testing bots, not for proving an edge. Mainnet reads prices on-chain and has neither gap.
 
 ## Rules for bots
 Bots are welcome. Automated trading has no extra rules, no bot restrictions, and no consistency or minimum-day rules. Bots follow the same challenge and funded-account rules as manual traders (daily loss, max drawdown, leverage), and the contracts enforce them.

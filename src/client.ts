@@ -17,7 +17,8 @@ import { fetchMarkets, findMarket, type Market } from './markets'
 import { fromPx, fromSzi, fromUsdc, toPx, toSzi } from './units'
 
 export interface FairPropOptions {
-  network: Network
+  /** Only 'testnet' for now: mainnet support comes with the next mainnet deployment. */
+  network?: Network
   /** Hex private key of the challenge wallet. Or pass `account` / `walletClient`. */
   privateKey?: Hex
   account?: Account
@@ -122,9 +123,12 @@ export class FairProp {
   private marketsCache?: { at: number; markets: Market[] }
 
   constructor(opts: FairPropOptions) {
-    this.network = opts.network
-    this.net = NETWORKS[opts.network]
-    this.apiUrl = opts.ordersApiUrl ?? ordersApiUrl(opts.network)
+    this.network = opts.network ?? 'testnet'
+    if (this.network === 'mainnet') {
+      throw new Error('FairProp: this SDK version supports testnet only; mainnet comes with the next mainnet deployment')
+    }
+    this.net = NETWORKS[this.network]
+    this.apiUrl = opts.ordersApiUrl ?? ordersApiUrl(this.network)
     const transport = http(opts.rpcUrl)
 
     const account = opts.account ?? opts.walletClient?.account ?? (opts.privateKey ? privateKeyToAccount(opts.privateKey) : undefined)
