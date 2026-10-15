@@ -107,7 +107,7 @@ Testnet trusts the caller's prices:
 The keeper flags deviations of more than 2% from mark and cancels the challenge. Testnet results are for building and testing bots, not for proving an edge. Mainnet reads prices on-chain and has neither gap.
 
 ## Rules for bots
-Challenge and funded-account rules (daily loss, max drawdown, leverage) are enforced by the contracts, the same for bots as for manual traders. <!-- TODO(Jan): state the automated-trading policy here before publishing (docs/Backlog.md, "Automated-trading policy"). -->
+Bots are welcome. Automated trading has no extra rules, no bot restrictions, and no consistency or minimum-day rules. Bots follow the same challenge and funded-account rules as manual traders (daily loss, max drawdown, leverage), and the contracts enforce them.
 
 ## Development
 
@@ -119,4 +119,4 @@ npm run build
 npm run sync-abis  # after a contract redeploy (from ../fairprop), plus addresses in src/networks.ts
 ```
 
-MIT licensed.
+[MIT](LICENSE)
