@@ -104,6 +104,17 @@ Testnet trusts the caller's prices:
 
 The keeper can cancel a challenge whose fills are more than 2% from mark. Testnet results are for building and testing bots, not for proving an edge. Mainnet reads prices on-chain and has neither gap.
 
+## Key security
+FairProp is self-custody: whoever holds the challenge wallet's key controls the account. The SDK never sends your key anywhere. It only signs locally.
+
+- **Use a dedicated bot wallet.** Keep it separate from the wallet that holds your funds.
+- **Keep the key out of code and git.** Load it from an env var or a secrets manager. The examples read a gitignored `.env` file.
+- **Don't hand over the raw key if you can avoid it.** Pass any viem signer instead (AWS/GCP KMS, Turnkey, a Privy server wallet, a hardware wallet):
+  ```ts
+  new FairProp({ walletClient })   // or { account }
+  ```
+- **On mainnet, the challenge wallet also receives payouts.** Trading-only agent keys, which can trade but not withdraw (as Hyperliquid's API wallets do), are planned for the next mainnet deployment.
+
 ## Rules for bots
 Bots are welcome. Automated trading has no extra rules, no bot restrictions, and no consistency or minimum-day rules. Bots follow the same challenge and funded-account rules as manual traders (daily loss, max drawdown, leverage), and the contracts enforce them.
 
