@@ -66,7 +66,8 @@ To get started on testnet:
 | `fp.orders.close({...})` | Reduce-only market close |
 | `fp.orders.open(id)` | Pending signed orders |
 | `fp.orders.cancel(id, nonce)` | Cancel a signed order (and an entry's waiting TP/SL) |
-| `fp.fills.watch(id, cb)` | Stream fills from on-chain events |
+| `fp.fills.watch(id, cb)` | Stream fills from on-chain events (polls every 2s) |
+| `fp.fills.history(id)` | Past fills (default: the last 1000 blocks) |
 | `fp.payout(fundedChallengeId)` | Withdraw your profit share from a funded account |
 
 Sizes are in asset units (`0.01` BTC) and prices in USD. Helpers `toSzi` / `toPx` convert to contract units (1e18 sizes, 6-decimal prices).

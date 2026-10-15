@@ -217,6 +217,11 @@ export class FairProp {
           args: [id],
         }),
       ])
+      // The engine creates a challenge's state on its first trade; until then it reads as zeros.
+      if (s.challengeId === 0n) {
+        const c = await this.challenges.get(id)
+        return { equity: c.rules.accountSize, realizedPnl: 0, marginUsed: 0, drawdownPct: 0, openPositionIds: [] as bigint[] }
+      }
       return {
         equity: fromUsdc(s.equityUsdc),
         realizedPnl: fromUsdc(s.realizedPnlUsdc),
@@ -412,38 +417,76 @@ export class FairProp {
   // ---------------------------------------------------------------------------------------------
 
   readonly fills = {
-    /** Calls `onFill` for every fill on the challenge from now on. Returns an unsubscribe. */
-    watch: (challengeId: bigint | number, onFill: (fill: Fill) => void, onError?: (e: Error) => void) =>
-      this.public.watchContractEvent({
-        address: this.net.simulationEngine,
-        abi: this.net.abis.simulationEngine,
-        eventName: 'OrderExecuted',
-        args: { challengeId: BigInt(challengeId) },
-        onError,
-        onLogs: (logs) => {
-          for (const log of logs) {
-            const a = log.args as {
-              challengeId: bigint; positionId: bigint; assetId: number
-              newSzi: bigint; px: bigint; fee: bigint; realizedPnl: bigint
-            }
-            onFill({
-              challengeId: a.challengeId,
-              positionId: a.positionId,
-              assetId: a.assetId,
-              newSize: a.newSzi >= 0n ? fromSzi(a.newSzi) : -fromSzi(-a.newSzi),
-              price: fromPx(a.px),
-              fee: fromUsdc(a.fee),
-              realizedPnl: fromUsdc(a.realizedPnl),
-              txHash: log.transactionHash!,
-            })
+    /** Fills on the challenge in a block range (default: the last 1000 blocks). */
+    history: async (challengeId: bigint | number, range: { fromBlock?: bigint; toBlock?: bigint } = {}): Promise<Fill[]> => {
+      const toBlock = range.toBlock ?? (await this.public.getBlockNumber())
+      const fromBlock = range.fromBlock ?? (toBlock > 1000n ? toBlock - 1000n : 0n)
+      return this.fillsBetween(BigInt(challengeId), fromBlock, toBlock)
+    },
+
+    /**
+     * Calls `onFill` for every fill on the challenge from now on. Returns an unsubscribe.
+     * Polls getLogs over block ranges: the public HyperEVM RPCs reject eth_newFilter, which
+     * viem's watchContractEvent relies on.
+     */
+    watch: (challengeId: bigint | number, onFill: (fill: Fill) => void, opts: { intervalMs?: number; onError?: (e: Error) => void } = {}) => {
+      const id = BigInt(challengeId)
+      let next: bigint | undefined
+      let stopped = false
+      let timer: ReturnType<typeof setTimeout> | undefined
+      const tick = async () => {
+        try {
+          const head = await this.public.getBlockNumber()
+          if (next === undefined) next = head + 1n
+          else if (head >= next) {
+            // Cap each query: RPCs limit getLogs ranges.
+            const to = head - next > 999n ? next + 999n : head
+            for (const fill of await this.fillsBetween(id, next, to)) onFill(fill)
+            next = to + 1n
           }
-        },
-      }),
+        } catch (e) {
+          opts.onError?.(e as Error)
+        }
+        if (!stopped) timer = setTimeout(tick, opts.intervalMs ?? 2_000)
+      }
+      void tick()
+      return () => {
+        stopped = true
+        clearTimeout(timer)
+      }
+    },
   }
 
   // ---------------------------------------------------------------------------------------------
   // Internals
   // ---------------------------------------------------------------------------------------------
+
+  private async fillsBetween(challengeId: bigint, fromBlock: bigint, toBlock: bigint): Promise<Fill[]> {
+    const logs = await this.public.getContractEvents({
+      address: this.net.simulationEngine,
+      abi: this.net.abis.simulationEngine,
+      eventName: 'OrderExecuted',
+      args: { challengeId },
+      fromBlock,
+      toBlock,
+    })
+    return logs.map((log) => {
+      const a = log.args as {
+        challengeId: bigint; positionId: bigint; assetId: number
+        newSzi: bigint; px: bigint; fee: bigint; realizedPnl: bigint
+      }
+      return {
+        challengeId: a.challengeId,
+        positionId: a.positionId,
+        assetId: a.assetId,
+        newSize: a.newSzi >= 0n ? fromSzi(a.newSzi) : -fromSzi(-a.newSzi),
+        price: fromPx(a.px),
+        fee: fromUsdc(a.fee),
+        realizedPnl: fromUsdc(a.realizedPnl),
+        txHash: log.transactionHash!,
+      }
+    })
+  }
 
   private async send(request: Parameters<WalletClient['writeContract']>[0]): Promise<Hash> {
     return this.wallet.writeContract({ ...request, account: this.account, chain: this.net.chain } as Parameters<WalletClient['writeContract']>[0])
