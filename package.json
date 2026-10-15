@@ -1,0 +1,52 @@
+{
+  "name": "@fairprop/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for FairProp, on-chain prop trading on Hyperliquid. No API key: your wallet signs everything.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "sync-abis": "./scripts/sync-abis.sh"
+  },
+  "peerDependencies": {
+    "viem": "^2.30.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.6.0",
+    "viem": "^2.57.0",
+    "vitest": "^3.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fairprop/sdk"
+  },
+  "keywords": [
+    "fairprop",
+    "hyperliquid",
+    "hyperevm",
+    "prop-trading",
+    "trading-bot"
+  ]
+}
